@@ -1,0 +1,251 @@
+
+<style>
+  .dash { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .header { margin-bottom: 1.5rem; }
+  .lead { font-size: 14px; color: var(--color-text-secondary); margin: 6px 0 0; max-width: 680px; line-height: 1.6; }
+  .source { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px; }
+  .metric-val { font-size: 24px; font-weight: 500; color: var(--color-text-primary); margin: 0; line-height: 1.1; }
+  .metric-sub { font-size: 11px; color: var(--color-text-secondary); margin: 2px 0 0; }
+  .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .ctrl-label { font-size: 13px; color: var(--color-text-secondary); }
+  select { font-size: 13px; padding: 5px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .chart-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
+  .chart-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+  .chart-sub { font-size: 11px; color: var(--color-text-secondary); margin: 0 0 12px; }
+  .chart-full { grid-column: 1 / -1; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; color: var(--color-text-secondary); }
+  .leg-item { display: flex; align-items: center; gap: 4px; }
+  .leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .highlight-info { font-size: 12px; color: var(--color-text-secondary); margin-top: 8px; padding: 6px 10px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); }
+</style>
+
+<div class="dash">
+  <div class="header">
+    <h2 style="margin:0; font-size:20px; font-weight:500;">Seattle pet license dashboard</h2>
+    <p class="lead">Tracking licensed pets across Seattle neighborhoods — dogs, cats, and a handful of urban farm animals. Filter by year to explore licensing trends by species, top ZIP codes, and popular breeds.</p>
+    <p class="source">Data source: City of Seattle Open Data Portal — Pet Licenses dataset &bull; 41,300 records</p>
+  </div>
+
+  <div class="metrics" id="metrics">
+    <div class="metric"><p class="metric-label">Total licenses</p><p class="metric-val" id="m-total">41,300</p><p class="metric-sub">all years</p></div>
+    <div class="metric"><p class="metric-label">Dogs</p><p class="metric-val" id="m-dogs">27,843</p><p class="metric-sub id-dog-pct">67% of pets</p></div>
+    <div class="metric"><p class="metric-label">Cats</p><p class="metric-val" id="m-cats">13,433</p><p class="metric-sub id-cat-pct">33% of pets</p></div>
+    <div class="metric"><p class="metric-label">Unique ZIPs</p><p class="metric-val" id="m-zips">—</p><p class="metric-sub">neighborhoods</p></div>
+  </div>
+
+  <div class="controls">
+    <span class="ctrl-label">Filter by year:</span>
+    <select id="year-filter">
+      <option value="all">All years</option>
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+    </select>
+    <span class="ctrl-label" style="margin-left:8px;">Highlight species:</span>
+    <select id="species-filter">
+      <option value="all">All</option>
+      <option value="Dog">Dogs only</option>
+      <option value="Cat">Cats only</option>
+    </select>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card chart-full">
+      <p class="chart-title">Monthly licensing trends</p>
+      <p class="chart-sub" id="trend-sub">Licenses issued per month — 2024 & 2025</p>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-sq" style="background:#378ADD"></div>Dogs</div>
+        <div class="leg-item"><div class="leg-sq" style="background:#1D9E75"></div>Cats</div>
+      </div>
+      <div style="position:relative;height:220px;"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <p class="chart-title">Top 8 ZIP codes</p>
+      <p class="chart-sub" id="zip-sub">Licenses by neighborhood</p>
+      <div style="position:relative;height:320px;"><canvas id="zipChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <p class="chart-title">Top breeds</p>
+      <p class="chart-sub" id="breed-sub">Most popular breeds (dogs & cats)</p>
+      <div class="legend" id="breed-legend">
+        <div class="leg-item"><div class="leg-sq" style="background:#378ADD"></div>Dogs</div>
+        <div class="leg-item"><div class="leg-sq" style="background:#1D9E75"></div>Cats</div>
+      </div>
+      <div style="position:relative;height:300px;"><canvas id="breedChart"></canvas></div>
+    </div>
+
+    <div class="chart-card chart-full">
+      <p class="chart-title">Species split over time</p>
+      <p class="chart-sub">Year-over-year proportion of dogs vs cats (2022–2025)</p>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-sq" style="background:#378ADD"></div>Dogs</div>
+        <div class="leg-item"><div class="leg-sq" style="background:#1D9E75"></div>Cats</div>
+      </div>
+      <div style="position:relative;height:200px;"><canvas id="stackChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const DATA = {
+  monthly: {
+    2024: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      dogs:   [698,725,749,892,979,769,757,894,818,729,744,687],
+      cats:   [370,320,327,427,477,316,373,455,448,444,437,365]
+    },
+    2025: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      dogs:   [1366,1326,1596,1607,1594,1458,1646,1569,1457,1450,1513,1446],
+      cats:   [647,609,618,651,682,684,812,818,737,708,795,753]
+    }
+  },
+  zips: {
+    all:  { labels:['98115','98103','98117','98125','98122','98118','98107','98105'], dogs:[2312,2087,1658,1442,1382,1283,1161,1052], cats:[1532,1364,1075,939,901,834,757,686] },
+    2024: { labels:['98115','98103','98117','98125','98122','98118','98107','98105'], dogs:[890,804,638,555,532,494,447,405], cats:[590,525,414,362,347,321,291,264] },
+    2025: { labels:['98115','98103','98117','98125','98122','98118','98107','98105'], dogs:[1614,1456,1154,1004,962,893,808,732], cats:[1071,952,750,655,628,581,527,478] }
+  },
+  breeds: {
+    all: {
+      dog: [['Labrador Retriever',2571],['Chihuahua',1414],['Golden Retriever',1400],['German Shepherd',967],['Miniature Poodle',875]],
+      cat: [['Domestic Shorthair',7465],['Domestic Medium Hair',1522],['American Shorthair',1496],['Domestic Longhair',825],['Siamese',429]]
+    },
+    2024: {
+      dog: [['Labrador Retriever',990],['Chihuahua',545],['Golden Retriever',540],['German Shepherd',373],['Miniature Poodle',337]],
+      cat: [['Domestic Shorthair',2877],['Domestic Medium Hair',587],['American Shorthair',577],['Domestic Longhair',318],['Siamese',165]]
+    },
+    2025: {
+      dog: [['Labrador Retriever',1785],['Chihuahua',981],['Golden Retriever',972],['German Shepherd',671],['Miniature Poodle',606]],
+      cat: [['Domestic Shorthair',5180],['Domestic Medium Hair',1056],['American Shorthair',1038],['Domestic Longhair',572],['Siamese',298]]
+    }
+  },
+  yearly: {
+    labels: ['2022','2023','2024','2025'],
+    dogs:   [60,132,9441,18028],
+    cats:   [22,51,4759,8514]
+  },
+  totals: {
+    all:  { total:41300, dogs:27843, cats:13433, zips:38 },
+    2024: { total:14202, dogs:9441,  cats:4759,  zips:35 },
+    2025: { total:26564, dogs:18028, cats:8514,  zips:36 }
+  }
+};
+
+let trendChart, zipChart, breedChart, stackChart;
+
+function initTrend(yr, species) {
+  const y24 = DATA.monthly[2024];
+  const y25 = DATA.monthly[2025];
+  let labels, datasets;
+  if (yr === 'all') {
+    labels = [...y24.labels.map(l=>'24 '+l), ...y25.labels.map(l=>'25 '+l)];
+    let d24 = y24.dogs.map((v,i)=>v+(species==='all'||species==='Dog'?0:NaN)).map((v,i)=>species==='Cat'?y24.cats[i]:species==='Dog'?y24.dogs[i]:v);
+    let c24 = y24.cats;
+    let d25 = y25.dogs;
+    let c25 = y25.cats;
+    datasets = [];
+    if (species !== 'Cat') datasets.push({ label:'Dogs', data:[...y24.dogs,...y25.dogs], borderColor:'#378ADD', backgroundColor:'#378ADD22', fill:true, tension:0.35, pointRadius:2, borderWidth:2 });
+    if (species !== 'Dog') datasets.push({ label:'Cats', data:[...y24.cats,...y25.cats], borderColor:'#1D9E75', backgroundColor:'#1D9E7522', fill:true, tension:0.35, pointRadius:2, borderWidth:2 });
+  } else {
+    const src = DATA.monthly[yr];
+    labels = src.labels;
+    datasets = [];
+    if (species !== 'Cat') datasets.push({ label:'Dogs', data:src.dogs, borderColor:'#378ADD', backgroundColor:'#378ADD22', fill:true, tension:0.35, pointRadius:3, borderWidth:2 });
+    if (species !== 'Dog') datasets.push({ label:'Cats', data:src.cats, borderColor:'#1D9E75', backgroundColor:'#1D9E7522', fill:true, tension:0.35, pointRadius:3, borderWidth:2 });
+  }
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line', data:{ labels, datasets },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ font:{ size:11 }, maxRotation:45, autoSkip: yr==='all' }, grid:{ display:false } }, y:{ ticks:{ font:{ size:11 } }, grid:{ color:'#88878022' } } } }
+  });
+}
+
+function initZip(yr, species) {
+  const src = DATA.zips[yr==='all'?'all':yr];
+  let datasets;
+  if (species === 'Dog') {
+    datasets = [{ label:'Dogs', data:src.dogs, backgroundColor:'#378ADD', borderRadius:3 }];
+  } else if (species === 'Cat') {
+    datasets = [{ label:'Cats', data:src.cats, backgroundColor:'#1D9E75', borderRadius:3 }];
+  } else {
+    datasets = [
+      { label:'Dogs', data:src.dogs, backgroundColor:'#378ADD', borderRadius:3 },
+      { label:'Cats', data:src.cats, backgroundColor:'#1D9E75', borderRadius:3 }
+    ];
+  }
+  if (zipChart) zipChart.destroy();
+  zipChart = new Chart(document.getElementById('zipChart'), {
+    type:'bar',
+    data:{ labels:src.labels, datasets },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ stacked:false, ticks:{ font:{ size:11 } }, grid:{ color:'#88878022' } }, y:{ ticks:{ font:{ size:11 } }, grid:{ display:false } } } }
+  });
+}
+
+function initBreed(yr, species) {
+  const src = DATA.breeds[yr==='all'?'all':yr];
+  let labels, data, colors;
+  if (species === 'Dog') {
+    labels = src.dog.map(d=>d[0]);
+    data = src.dog.map(d=>d[1]);
+    colors = src.dog.map(()=>'#378ADD');
+  } else if (species === 'Cat') {
+    labels = src.cat.map(d=>d[0]);
+    data = src.cat.map(d=>d[1]);
+    colors = src.cat.map(()=>'#1D9E75');
+  } else {
+    labels = [...src.dog.slice(0,4).map(d=>d[0]), ...src.cat.slice(0,4).map(d=>d[0])];
+    data = [...src.dog.slice(0,4).map(d=>d[1]), ...src.cat.slice(0,4).map(d=>d[1])];
+    colors = [...src.dog.slice(0,4).map(()=>'#378ADD'), ...src.cat.slice(0,4).map(()=>'#1D9E75')];
+  }
+  if (breedChart) breedChart.destroy();
+  breedChart = new Chart(document.getElementById('breedChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:3 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ font:{ size:11 } }, grid:{ color:'#88878022' } }, y:{ ticks:{ font:{ size:10 }, maxTicksLimit:10 }, grid:{ display:false } } } }
+  });
+}
+
+function initStack() {
+  if (stackChart) stackChart.destroy();
+  stackChart = new Chart(document.getElementById('stackChart'), {
+    type:'bar',
+    data:{ labels:DATA.yearly.labels, datasets:[
+      { label:'Dogs', data:DATA.yearly.dogs, backgroundColor:'#378ADD', borderRadius:4 },
+      { label:'Cats', data:DATA.yearly.cats, backgroundColor:'#1D9E75', borderRadius:4 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ stacked:true, ticks:{ font:{ size:12 } }, grid:{ display:false } }, y:{ stacked:true, ticks:{ font:{ size:11 } }, grid:{ color:'#88878022' } } } }
+  });
+}
+
+function update() {
+  const yr = document.getElementById('year-filter').value;
+  const sp = document.getElementById('species-filter').value;
+  const totKey = yr==='all'?'all':yr;
+  const t = DATA.totals[totKey] || DATA.totals.all;
+  document.getElementById('m-total').textContent = t.total.toLocaleString();
+  document.getElementById('m-dogs').textContent = t.dogs.toLocaleString();
+  document.getElementById('m-cats').textContent = t.cats.toLocaleString();
+  document.getElementById('m-zips').textContent = t.zips;
+  const dogPct = Math.round(t.dogs/(t.dogs+t.cats)*100);
+  document.querySelector('.id-dog-pct').textContent = dogPct+'% of pets';
+  document.querySelector('#metrics .metric:nth-child(3) .metric-sub').textContent = (100-dogPct)+'% of pets';
+  document.getElementById('trend-sub').textContent = yr==='all' ? 'Licenses issued per month — 2024 & 2025' : 'Licenses issued per month — '+yr;
+  document.getElementById('zip-sub').textContent = yr==='all' ? 'All years' : yr;
+  document.getElementById('breed-sub').textContent = sp==='Dog' ? 'Top dog breeds' : sp==='Cat' ? 'Top cat breeds' : 'Top dog & cat breeds';
+  initTrend(yr, sp);
+  initZip(yr, sp);
+  initBreed(yr, sp);
+}
+
+document.getElementById('year-filter').addEventListener('change', update);
+document.getElementById('species-filter').addEventListener('change', update);
+
+update();
+initStack();
+</script>
